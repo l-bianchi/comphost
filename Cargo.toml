@@ -2,5 +2,16 @@
 name = "comphost"
 version = "0.1.0"
 edition = "2021"
+authors = ["l-bianchi"]
+license = "Apache-2.0"
+description = "An awesome CLI tool to handle your local compose projects."
+readme = "README.md"
+homepage = "https://github.com/l-bianchi/comphost"
+repository = "https://github.com/l-bianchi/comphost"
+keywords = ["cli", "manager", "docker", "containers", "develop"]
+categories = ["command-line-utilities"]
 
 [dependencies]
+clap = { version = "4.5.6", features = ["derive"] }
+serde = { version = "1.0.203", features = ["derive"] }
+toml = "0.8.14"
