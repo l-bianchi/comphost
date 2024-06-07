@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use std::collections::HashMap;
+use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::process::Command;
@@ -51,11 +52,29 @@ impl Configuration {
 
 fn main() {
     let args = Cli::parse();
-    let config_file_path = "config.toml";
+
+    // Get the user's home directory
+    let home_dir = match env::var("HOME") {
+        Ok(val) => val,
+        Err(_) => {
+            eprintln!("Failed to get user's home directory");
+            return;
+        }
+    };
+
+    // Define the config directory and file path
+    let config_dir = format!("{}/.config/comphost", home_dir);
+    let config_file_path = format!("{}/config.toml", config_dir);
+
+    // Ensure the config directory exists
+    if let Err(err) = std::fs::create_dir_all(&config_dir) {
+        eprintln!("Failed to create config directory: {}", err);
+        return;
+    }
 
     // Read the existing TOML content if the file exists
     let mut existing_content = String::new();
-    if let Ok(mut file) = File::open(config_file_path) {
+    if let Ok(mut file) = File::open(&config_file_path) {
         file.read_to_string(&mut existing_content)
             .expect("Could not read file");
     }
@@ -267,6 +286,4 @@ fn main() {
         .open(config_file_path)
         .expect("Could not open file");
     write!(file, "{}", toml_string).expect("Could not write to file");
-
-    println!("Configuration written to {}", config_file_path);
 }
