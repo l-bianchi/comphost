@@ -35,6 +35,8 @@ enum Commands {
     Start,
     /// Stop Docker Compose for active configurations
     Stop,
+    /// List configuration names for shell completion
+    ListNames,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -213,9 +215,6 @@ fn main() {
                     if start_command.status.success() {
                         println!("Started Docker Compose for '{}'", config_name);
 
-                        // Wait for containers to start successfully
-                        std::thread::sleep(std::time::Duration::from_secs(5));
-
                         // Retrieve container IDs
                         let ps_output = Command::new("docker")
                             .args(&["compose", "ps", "--format", "{{.ID}}"])
@@ -271,6 +270,11 @@ fn main() {
                         io::stderr().write_all(&stop_command.stderr).unwrap();
                     }
                 }
+            }
+        }
+        Commands::ListNames => {
+            for config_name in toml_content.keys() {
+                println!("{}", config_name);
             }
         }
     }
