@@ -203,71 +203,75 @@ fn main() {
             }
 
             for (config_name, config) in &mut toml_content {
-                if let Some(ref clone_path) = config.clone_path {
-                    let start_command = Command::new("docker")
-                        .arg("compose")
-                        .arg("up")
-                        .arg("--detach")
-                        .current_dir(clone_path)
-                        .output()
-                        .expect("Failed to execute docker compose up command");
-
-                    if start_command.status.success() {
-                        println!("Started Docker Compose for '{}'", config_name);
-
-                        // Retrieve container IDs
-                        let ps_output = Command::new("docker")
-                            .args(&["compose", "ps", "--format", "{{.ID}}"])
+                if config.active {
+                    if let Some(ref clone_path) = config.clone_path {
+                        let start_command = Command::new("docker")
+                            .arg("compose")
+                            .arg("up")
+                            .arg("--detach")
                             .current_dir(clone_path)
                             .output()
-                            .expect("Failed to execute docker ps command");
-                        let container_ids = String::from_utf8_lossy(&ps_output.stdout);
+                            .expect("Failed to execute docker compose up command");
 
-                        // Attach containers to the comphost network
-                        for container_id in container_ids.split_whitespace() {
-                            let attach_command = Command::new("docker")
-                                .arg("network")
-                                .arg("connect")
-                                .arg("comphost")
-                                .arg(container_id)
+                        if start_command.status.success() {
+                            println!("Started Docker Compose for '{}'", config_name);
+
+                            // Retrieve container IDs
+                            let ps_output = Command::new("docker")
+                                .args(&["compose", "ps", "--format", "{{.ID}}"])
+                                .current_dir(clone_path)
                                 .output()
-                                .expect("Failed to execute docker network connect command");
+                                .expect("Failed to execute docker ps command");
+                            let container_ids = String::from_utf8_lossy(&ps_output.stdout);
 
-                            if attach_command.status.success() {
-                                println!(
-                                    "Attached container '{}' to comphost network for '{}'",
-                                    container_id, config_name
-                                );
-                            } else {
-                                eprintln!(
-                                    "Failed to attach container '{}' to comphost network for '{}'",
-                                    container_id, config_name
-                                );
-                                io::stderr().write_all(&attach_command.stderr).unwrap();
+                            // Attach containers to the comphost network
+                            for container_id in container_ids.split_whitespace() {
+                                let attach_command = Command::new("docker")
+                                    .arg("network")
+                                    .arg("connect")
+                                    .arg("comphost")
+                                    .arg(container_id)
+                                    .output()
+                                    .expect("Failed to execute docker network connect command");
+
+                                if attach_command.status.success() {
+                                    println!(
+                                        "Attached container '{}' to comphost network for '{}'",
+                                        container_id, config_name
+                                    );
+                                } else {
+                                    eprintln!(
+                                        "Failed to attach container '{}' to comphost network for '{}'",
+                                        container_id, config_name
+                                    );
+                                    io::stderr().write_all(&attach_command.stderr).unwrap();
+                                }
                             }
+                        } else {
+                            eprintln!("Failed to start Docker Compose for '{}'", config_name);
+                            io::stderr().write_all(&start_command.stderr).unwrap();
                         }
-                    } else {
-                        eprintln!("Failed to start Docker Compose for '{}'", config_name);
-                        io::stderr().write_all(&start_command.stderr).unwrap();
                     }
                 }
             }
         }
         Commands::Stop => {
             for (config_name, config) in &toml_content {
-                if let Some(ref clone_path) = config.clone_path {
-                    let stop_command = Command::new("docker")
-                        .arg("compose")
-                        .arg("down")
-                        .current_dir(clone_path)
-                        .output()
-                        .expect("Failed to execute docker compose down command");
+                if config.active {
+                    if let Some(ref clone_path) = config.clone_path {
+                        let stop_command = Command::new("docker")
+                            .arg("compose")
+                            .arg("down")
+                            .current_dir(clone_path)
+                            .output()
+                            .expect("Failed to execute docker compose down command");
 
-                    if stop_command.status.success() {
-                        println!("Stopped Docker Compose for '{}'", config_name);
-                    } else {
-                        eprintln!("Failed to stop Docker Compose for '{}'", config_name);
-                        io::stderr().write_all(&stop_command.stderr).unwrap();
+                        if stop_command.status.success() {
+                            println!("Stopped Docker Compose for '{}'", config_name);
+                        } else {
+                            eprintln!("Failed to stop Docker Compose for '{}'", config_name);
+                            io::stderr().write_all(&stop_command.stderr).unwrap();
+                        }
                     }
                 }
             }
